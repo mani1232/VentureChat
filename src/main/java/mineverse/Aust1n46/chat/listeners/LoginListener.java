@@ -1,5 +1,6 @@
 package mineverse.Aust1n46.chat.listeners;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -79,11 +80,7 @@ public class LoginListener implements Listener {
 					|| plugin.getServer().spigot().getPaperConfig().getBoolean("proxies.velocity.enabled")) {
 				long delayInTicks = 20L;
 				final MineverseChatPlayer sync = mcp;
-				plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, new Runnable() {
-					public void run() {
-						MineverseChat.synchronize(sync, false);
-					}
-				}, delayInTicks);
+				MineverseChat.getScheduler().entitySpecificScheduler(player).runDelayed(() -> MineverseChat.synchronize(sync, false), () -> {}, delayInTicks);
 			}
 		}
 		catch(NoSuchMethodError exception) { // Thrown if server isn't Paper.

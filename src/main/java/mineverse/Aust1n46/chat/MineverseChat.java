@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,6 +51,8 @@ import mineverse.Aust1n46.chat.utilities.Format;
 import mineverse.Aust1n46.chat.versions.VersionHandler;
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.Permission;
+import space.arim.morepaperlib.MorePaperLib;
+import space.arim.morepaperlib.scheduling.GracefulScheduling;
 
 /**
  * VentureChat Minecraft plugin for servers running Spigot or Paper software.
@@ -78,9 +81,11 @@ public class MineverseChat extends JavaPlugin implements PluginMessageListener {
 	// Vault
 	private static Permission permission = null;
 	private static Chat chat = null;
+	private static GracefulScheduling scheduler = null;
 	
 	@Override
 	public void onEnable() {
+		scheduler = new MorePaperLib(this).scheduling();
 		ccInfo = new ChatChannelInfo();
 		
 		try {
@@ -116,9 +121,7 @@ public class MineverseChat extends JavaPlugin implements PluginMessageListener {
 		PlayerData.loadLegacyPlayerData();
 		PlayerData.loadPlayerData();
 		
-		Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-			Database.initializeMySQL();
-		});
+		scheduler.asyncScheduler().run(Database::initializeMySQL);
 
 		VentureCommandExecutor.initialize();
 
@@ -163,21 +166,16 @@ public class MineverseChat extends JavaPlugin implements PluginMessageListener {
 	}
 	
 	private void startRepeatingTasks() {
-		BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-		scheduler.runTaskTimerAsynchronously(this, new Runnable() {
-			@Override
-			public void run() {
-				PlayerData.savePlayerData();
-				if(getConfig().getString("loglevel", "info").equals("debug")) {
-					Bukkit.getConsoleSender().sendMessage(Format.FormatStringAll("&8[&eVentureChat&8]&e - Saving Player Data"));
-				}
+		scheduler.asyncScheduler().runAtFixedRate(() -> {
+			PlayerData.savePlayerData();
+			if(getConfig().getString("loglevel", "info").equals("debug")) {
+				Bukkit.getConsoleSender().sendMessage(Format.FormatStringAll("&8[&eVentureChat&8]&e - Saving Player Data"));
 			}
-		}, 0L, getConfig().getInt("saveinterval") * 1200); //one minute * save interval
-		
-		scheduler.runTaskTimerAsynchronously(this, new Runnable() {
-			@Override
-			public void run() {
-				for (MineverseChatPlayer p : MineverseChatAPI.getOnlineMineverseChatPlayers()) {
+		}, Duration.ofMillis(1), Duration.ofMinutes(getConfig().getInt("saveinterval"))); //one minute * save interval
+
+		scheduler.asyncScheduler().runAtFixedRate(() -> {
+			for (MineverseChatPlayer p : MineverseChatAPI.getOnlineMineverseChatPlayers()) {
+				scheduler.entitySpecificScheduler(p.getPlayer()).run(()-> {
 					long currentTimeMillis = System.currentTimeMillis();
 					Iterator<MuteContainer> iterator = p.getMutes().iterator();
 					while (iterator.hasNext()) {
@@ -202,13 +200,13 @@ public class MineverseChat extends JavaPlugin implements PluginMessageListener {
 							}
 						}
 					}
-				}
-				if (getConfig().getString("loglevel", "info").equals("trace")) {
-					Bukkit.getConsoleSender()
-							.sendMessage(Format.FormatStringAll("&8[&eVentureChat&8]&e - Updating Player Mutes"));
-				}
+				}, ()-> {});
 			}
-		}, 0L, 60L); // three second interval
+			if (getConfig().getString("loglevel", "info").equals("trace")) {
+				Bukkit.getConsoleSender()
+						.sendMessage(Format.FormatStringAll("&8[&eVentureChat&8]&e - Updating Player Mutes"));
+			}
+		}, Duration.ofMillis(1), Duration.ofSeconds(3)); // three second interval
 	}
 	
 	private void registerListeners() {
@@ -1088,5 +1086,9 @@ public class MineverseChat extends JavaPlugin implements PluginMessageListener {
 		catch(Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static GracefulScheduling getScheduler() {
+		return scheduler;
 	}
 }

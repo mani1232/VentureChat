@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import mineverse.Aust1n46.chat.MineverseChat;
 import org.slf4j.Logger;
 
 import com.google.inject.Inject;
@@ -98,11 +99,7 @@ public class VentureChatVelocity implements VentureChatProxySource {
 	@Subscribe
 	public void onPlayerQuit(DisconnectEvent event) {
 		// Delay sending plugin message to make sure disconnecting player is truly disconnected.
-		proxyServer.getScheduler().buildTask(this, () -> {
-			updatePlayerNames();
-		})
-		.delay(1, TimeUnit.SECONDS)
-		.schedule();
+		MineverseChat.getScheduler().asyncScheduler().run(this::updatePlayerNames);
 	}
 	
 	private void updatePlayerNames() {

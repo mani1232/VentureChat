@@ -67,7 +67,7 @@ public class Database {
 		Calendar currentDate = Calendar.getInstance();
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String date = formatter.format(currentDate.getTime());
-		Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+		MineverseChat.getScheduler().asyncScheduler().run(() -> {
 			try (final Connection conn = dataSource.getConnection();
 					final PreparedStatement statement = conn.prepareStatement(
 							"INSERT INTO VentureChat " + "(ChatTime, UUID, Name, Server, Channel, Text, Type) "

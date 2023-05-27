@@ -47,12 +47,7 @@ public class ChatListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onAsyncPlayerChatEvent(AsyncPlayerChatEvent event) {
 		event.setCancelled(true);
-		Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-			@Override
-			public void run() {
-				handleTrueAsyncPlayerChatEvent(event);
-			}
-		});
+		MineverseChat.getScheduler().entitySpecificScheduler(event.getPlayer()).run(() -> handleTrueAsyncPlayerChatEvent(event), () -> {});
 	}
 	
 	public void handleTrueAsyncPlayerChatEvent(AsyncPlayerChatEvent event) {

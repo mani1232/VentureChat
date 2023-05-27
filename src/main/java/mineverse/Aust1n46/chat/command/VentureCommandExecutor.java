@@ -2,6 +2,7 @@ package mineverse.Aust1n46.chat.command;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -166,11 +167,11 @@ public class VentureCommandExecutor {
 		}
 		// Forcibly re-register enabled VentureChat commands on a delay to ensure they
 		// have priority
-		server.getScheduler().runTaskLater(plugin, () -> {
+		MineverseChat.getScheduler().asyncScheduler().runDelayed(() -> {
 			for (final Entry<String, Command> commandEntry : commands.entrySet()) {
 				registerCommand(commandEntry.getKey(), commandEntry.getValue());
 			}
-		}, 10);
+		}, Duration.ofMillis(10));
 	}
 
 	public static void registerCommand(final String commandLabel, final Command command) {
